@@ -1,0 +1,1078 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Kalman Filter</title>
+
+  <!-- Reveal.js -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/white.css">
+
+  <!-- Custom styling -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- MathJax for future slides -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- SLIDE 1: TITLE -->
+    <section class="title-slide">
+
+      <div class="title-content">
+
+        <h1 class="main-title">
+          Kalman Filter
+        </h1>
+
+
+        <div class="title-divider"></div>
+
+        <p class="presenter-name">
+          Abhishek Kashyap
+        </p>
+
+        <p class="lecture-reference">
+          Primary Source  <em>Optimal Estimation of Dynamic Systems</em><br>
+          J. L. Crassidis and J. L. Junkins
+        </p>
+
+      </div>
+
+    </section>
+
+  <!-- SLIDE 2: MOTIVATION -->
+<section class="kf-motivation-slide">
+
+  <h2 class="kf-slide-title">
+    Motivation: Why Do We Need a Kalman Filter?
+  </h2>
+
+  <p class="kf-intro">
+    Suppose an aircraft moves approximately with constant velocity.
+    How can we estimate its state when both the motion model and the GPS measurements are uncertain?
+  </p>
+
+  <div class="kf-motivation-grid">
+
+    <!-- LEFT: AIRCRAFT ANIMATION -->
+    <div class="kf-visual-panel">
+
+      <div class="kf-panel-heading">
+        Aircraft Motion, Prediction, and Measurement
+      </div>
+
+      <svg viewBox="0 0 700 380" class="kf-aircraft-scene">
+
+        <!-- background -->
+        <rect x="0" y="0" width="700" height="380" fill="#fdfefe"/>
+        <rect x="20" y="20" width="660" height="300" rx="10"
+              fill="#f5f9fd" stroke="#d8e3ef" stroke-width="2"/>
+
+        <!-- initial point label -->
+        <circle cx="105" cy="245" r="4" fill="#444"/>
+        <text x="70" y="273" class="kf-scene-small">
+          Initial state \((x_0,y_0)\)
+        </text>
+
+        <!-- model trajectory -->
+        <path id="kfModelTrajectory"
+              d="M105 245 L610 105"
+              class="kf-model-path"/>
+
+        <text id="kfModelLabel"
+              x="340" y="92"
+              class="kf-scene-label kf-model-label">
+          Predicted trajectory
+        </text>
+
+        <!-- uncertain / actual trajectory -->
+        <path id="kfUncertainTrajectory"
+              d="M105 245
+                 C155 228, 185 258, 230 230
+                 S305 198, 345 205
+                 S420 160, 470 172
+                 S545 130, 610 108"
+              class="kf-uncertain-path"/>
+
+        <text id="kfUncertainLabel"
+              x="338" y="76"
+              class="kf-scene-label kf-uncertain-label">
+          Actual motion with process uncertainty
+        </text>
+
+        <!-- precise GPS measurement beacons -->
+        <g id="kfGpsP0" class="kf-gps-precise">
+          <circle cx="165" cy="228" r="5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsP1" class="kf-gps-precise">
+          <circle cx="250" cy="205" r="5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsP2" class="kf-gps-precise">
+          <circle cx="335" cy="182" r="5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsP3" class="kf-gps-precise">
+          <circle cx="420" cy="158" r="5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsP4" class="kf-gps-precise">
+          <circle cx="505" cy="135" r="5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsP5" class="kf-gps-precise">
+          <circle cx="590" cy="112" r="5" class="kf-gps-dot"/>
+        </g>
+
+        <!-- uncertain GPS measurement beacons -->
+        <g id="kfGpsU0" class="kf-gps-uncertain">
+          <circle cx="165" cy="232" r="17" class="kf-gps-uncertain-ring"/>
+          <circle cx="165" cy="232" r="4.5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsU1" class="kf-gps-uncertain">
+          <circle cx="258" cy="214" r="18" class="kf-gps-uncertain-ring"/>
+          <circle cx="258" cy="214" r="4.5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsU2" class="kf-gps-uncertain">
+          <circle cx="345" cy="193" r="18" class="kf-gps-uncertain-ring"/>
+          <circle cx="345" cy="193" r="4.5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsU3" class="kf-gps-uncertain">
+          <circle cx="430" cy="170" r="18" class="kf-gps-uncertain-ring"/>
+          <circle cx="430" cy="170" r="4.5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsU4" class="kf-gps-uncertain">
+          <circle cx="520" cy="148" r="19" class="kf-gps-uncertain-ring"/>
+          <circle cx="520" cy="148" r="4.5" class="kf-gps-dot"/>
+        </g>
+        <g id="kfGpsU5" class="kf-gps-uncertain">
+          <circle cx="602" cy="120" r="19" class="kf-gps-uncertain-ring"/>
+          <circle cx="602" cy="120" r="4.5" class="kf-gps-dot"/>
+        </g>
+
+        <!-- aircraft -->
+        <g id="kfAircraft">
+          <!-- fuselage -->
+          <ellipse cx="0" cy="0" rx="20" ry="7" fill="#d9dde3" stroke="#666" stroke-width="1.2"/>
+          <!-- nose -->
+          <polygon points="20,0 30,-3 30,3" fill="#777"/>
+          <!-- wings -->
+          <polygon points="-2,-2 -14,-20 7,-4" fill="#9aa5b1" stroke="#666" stroke-width="1"/>
+          <polygon points="-2,2 -14,20 7,4" fill="#9aa5b1" stroke="#666" stroke-width="1"/>
+          <!-- tail -->
+          <polygon points="-18,-2 -28,-12 -21,-2" fill="#9aa5b1" stroke="#666" stroke-width="1"/>
+          <polygon points="-18,2 -28,12 -21,2" fill="#9aa5b1" stroke="#666" stroke-width="1"/>
+          <!-- vertical tail -->
+          <polygon points="-18,-1 -24,-12 -16,-7" fill="#8a96a3" stroke="#666" stroke-width="1"/>
+        </g>
+
+      </svg>
+
+      <div id="kfSceneCaption" class="kf-scene-caption">
+        The aircraft starts from a known initial state.
+      </div>
+
+    </div>
+
+    <!-- RIGHT: EXPLANATION -->
+    <div class="kf-explanation-panel">
+
+      <div class="kf-info-card model-card fragment" data-fragment-index="0">
+        <h3>1. Predict Using a Motion Model</h3>
+
+        \[
+        \mathbf{x}_k=
+        \begin{bmatrix}
+        p_k\\[2pt]
+        v_k
+        \end{bmatrix},
+        \qquad
+        \begin{aligned}
+        p_{k+1} &= p_k + v_k\Delta t\\
+        v_{k+1} &= v_k
+        \end{aligned}
+        \]
+
+        <p>
+          If the aircraft truly follows a constant-velocity model,
+          then the model alone predicts the state accurately.
+        </p>
+      </div>
+
+      <div class="kf-info-card gps-card fragment" data-fragment-index="1">
+        <h3>2. Measure Using GPS</h3>
+
+        \[
+        z_k = p_k
+        \]
+
+        <p>
+          If the GPS measurement were perfect, then the measured position
+          alone would accurately represent the state.
+        </p>
+      </div>
+
+      <div class="kf-info-card uncertainty-card fragment" data-fragment-index="2">
+        <h3>3. In Reality, Both Are Uncertain</h3>
+
+        <p>
+          <strong>Process uncertainty:</strong> wind, unmodeled acceleration,
+          and simplifications in the motion model.
+        </p>
+
+        <p>
+          <strong>Measurement uncertainty:</strong> GPS noise, bias,
+          and imperfect sensing.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="kf-question fragment" data-fragment-index="3">
+    We therefore need a framework that combines the model, the measurements,
+    and their uncertainties to estimate the state correctly.
+
+    <div class="kf-answer">
+      This is exactly what the Kalman Filter does.
+    </div>
+  </div>
+
+  <div class="kf-citation">
+    Reference: Crassidis &amp; Junkins, <em>Optimal Estimation of Dynamic Systems</em>.
+  </div>
+
+</section>
+
+
+<!-- SLIDE 3: STATE-SPACE MODEL -->
+<section class="kf3-slide">
+
+  <h2 class="kf3-title">
+    Mathematical Modeling: Motion and Uncertainty
+  </h2>
+
+  <p class="kf3-intro">
+    For simplicity, consider motion along the aircraft's
+    flight direction.
+  </p>
+
+  <div class="kf3-grid">
+
+    <!-- STATE VECTOR -->
+    <div class="kf3-panel kf3-state fragment"
+         data-fragment-index="0">
+
+      <h3>1. What Do We Want to Estimate?</h3>
+
+      <div class="kf3-equation">
+        \[
+        \mathbf{x}_k =
+        \begin{bmatrix}
+          p_k\\
+          v_k
+        \end{bmatrix}
+        \]
+      </div>
+
+      <p>
+        <strong>\(p_k\)</strong>: Aircraft position
+        &nbsp;&nbsp;
+        <strong>\(v_k\)</strong>: Aircraft velocity
+      </p>
+
+    </div>
+
+    <!-- GPS MEASUREMENT -->
+    <div class="kf3-panel kf3-gps fragment"
+         data-fragment-index="2">
+
+      <h3>3. GPS Measurement Model</h3>
+
+      <div class="kf3-equation">
+        \[
+        z_k =
+        \begin{bmatrix}1 & 0\end{bmatrix}
+        \mathbf{x}_k + \nu_k
+        \]
+      </div>
+
+      <p>
+        GPS measures position, but the measurement
+        contains an error \(\nu_k\).
+      </p>
+
+      <p class="kf3-emphasis">
+        We measure position, but want both position and velocity.
+      </p>
+
+    </div>
+
+    <!-- PROCESS MODEL -->
+    <div class="kf3-panel kf3-model fragment"
+         data-fragment-index="1">
+
+      <h3>2. Constant-Velocity Process Model</h3>
+
+      <div class="kf3-equation">
+        \[
+        \mathbf{x}_{k+1} =
+        \underbrace{
+        \begin{bmatrix}
+          1 & \Delta t\\
+          0 & 1
+        \end{bmatrix}}_{F}
+        \mathbf{x}_k
+        + \mathbf{w}_k
+        \]
+      </div>
+
+      <p>
+        The matrix \(F\) describes how the state evolves
+        from one time step to the next.
+      </p>
+
+      <p>
+        <strong>\(\mathbf{w}_k\):</strong>
+        Process noise, accounting for unmodeled acceleration,
+        disturbances, and other modeling errors.
+      </p>
+
+    </div>
+
+    <!-- UNCERTAINTY -->
+    <div class="kf3-panel kf3-noise fragment"
+         data-fragment-index="3">
+
+      <h3>4. Describing Uncertainty</h3>
+
+      <div class="kf3-equation kf3-noise-equation">
+        \[
+        \mathbf{w}_k \sim \mathcal{N}(\mathbf{0},Q),
+        \qquad
+        \nu_k \sim \mathcal{N}(0,R)
+        \]
+      </div>
+
+      <div class="kf3-noise-definition">
+        <p>
+          <strong>Q:</strong>
+          Covariance of process noise.
+          Describes model-error uncertainty.
+        </p>
+
+        <p>
+          <strong>R:</strong>
+          Variance of measurement noise.
+          Describes GPS uncertainty.
+        </p>
+      </div>
+
+      <p class="kf3-stat-note">
+        Mean describes the center; variance measures spread;
+        covariance describes how errors vary together.
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- TRANSITION TO NEXT SLIDE -->
+  <div class="kf3-bottom-question fragment"
+       data-fragment-index="3">
+
+    Given uncertain predictions and measurements,
+    how should we combine them to estimate the state?
+
+  </div>
+
+  <div class="kf3-citation">
+    Reference: Crassidis &amp; Junkins,
+    <em>Optimal Estimation of Dynamic Systems</em>.
+  </div>
+
+</section>
+
+
+<!-- SLIDE 4: PREDICTION STEP -->
+<section class="kf4-slide">
+
+  <h2 class="kf4-title">
+    Kalman Filter: Prediction Step
+  </h2>
+
+  <p class="kf4-intro">
+    Starting from the previous estimate, we use the motion model to predict
+    the next state and propagate its uncertainty.
+  </p>
+
+  <div class="kf4-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="kf4-left">
+
+      <!-- state propagation -->
+      <div class="kf4-card kf4-state-card fragment" data-fragment-index="0">
+        <h3>1. State Propagation</h3>
+
+        <div class="kf4-equation">
+          \[
+          \hat{\mathbf{x}}_k^- = F\hat{\mathbf{x}}_{k-1}^+
+          \]
+        </div>
+
+        <p>
+          The previous corrected estimate is propagated through
+          the motion model to predict the next state.
+        </p>
+      </div>
+
+      <!-- covariance propagation -->
+      <div class="kf4-card kf4-cov-card fragment" data-fragment-index="1">
+        <h3>2. Covariance Propagation</h3>
+
+        <div class="kf4-equation">
+          \[
+          P_k^- = FP_{k-1}^+F^T + Q
+          \]
+        </div>
+
+        <p>
+          The uncertainty in the state estimate is also propagated.
+          The process noise covariance \(Q\) adds uncertainty due to
+          model imperfections and disturbances.
+        </p>
+      </div>
+
+      <!-- meaning of P -->
+      <div class="kf4-card kf4-meaning-card fragment" data-fragment-index="2">
+        <h3>3. What Does \(P\) Mean?</h3>
+
+        <div class="kf4-equation">
+          \[
+          P = \mathbb{E}\!\left[
+          (\mathbf{x}-\hat{\mathbf{x}})
+          (\mathbf{x}-\hat{\mathbf{x}})^T
+          \right]
+          \]
+        </div>
+
+        <ul class="kf4-bullets">
+          <li><strong>Diagonal terms:</strong> variances of individual state errors</li>
+          <li><strong>Off-diagonal terms:</strong> correlation/covariance between errors</li>
+          <li><strong>Larger \(P\):</strong> less confidence in the estimate</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="kf4-right">
+
+      <div class="kf4-visual-heading">
+        Conceptual View of Uncertainty Propagation
+      </div>
+
+      <svg viewBox="0 0 560 360" class="kf4-svg">
+
+        <!-- axes left -->
+        <line x1="70" y1="300" x2="220" y2="300" class="kf4-axis"/>
+        <line x1="70" y1="300" x2="70" y2="110" class="kf4-axis"/>
+
+        <text x="145" y="330" text-anchor="middle" class="kf4-axis-label">Position (p)</text>
+        <text x="32" y="205" text-anchor="middle"
+              transform="rotate(-90 32 205)"
+              class="kf4-axis-label">Velocity (v)</text>
+
+        <!-- axes right -->
+        <line x1="325" y1="300" x2="490" y2="300" class="kf4-axis"/>
+        <line x1="325" y1="300" x2="325" y2="110" class="kf4-axis"/>
+
+        <text x="408" y="330" text-anchor="middle" class="kf4-axis-label">Position (p)</text>
+        <text x="287" y="205" text-anchor="middle"
+              transform="rotate(-90 287 205)"
+              class="kf4-axis-label">Velocity (v)</text>
+
+        <!-- previous estimate -->
+        <g class="fragment" data-fragment-index="0">
+          <ellipse cx="145" cy="215" rx="36" ry="20"
+                   transform="rotate(-25 145 215)"
+                   class="kf4-ellipse-prev"/>
+          <circle cx="145" cy="215" r="4" class="kf4-center-prev"/>
+          <text x="145" y="92" text-anchor="middle" class="kf4-label-prev">
+            At time (k-1)
+          </text>
+          <text x="145" y="350" text-anchor="middle" class="kf4-caption">
+            Previous corrected estimate 
+          </text>
+        </g>
+
+        <!-- propagation arrow -->
+        <g class="fragment" data-fragment-index="1">
+          <line x1="190" y1="205" x2="265" y2="205" class="kf4-arrow"/>
+          <polygon points="265,205 253,198 253,212" class="kf4-arrow-head"/>
+          <text x="221" y="182" text-anchor="middle" class="kf4-arrow-label">
+            Propagate 
+          </text>
+        </g>
+
+        <!-- predicted estimate -->
+        <g class="fragment" data-fragment-index="1">
+          <ellipse cx="408" cy="195" rx="56" ry="30"
+                   transform="rotate(-25 408 195)"
+                   class="kf4-ellipse-pred"/>
+          <circle cx="408" cy="195" r="4" class="kf4-center-pred"/>
+          <text x="408" y="92" text-anchor="middle" class="kf4-label-pred">
+            At time (k)
+          </text>
+          <text x="408" y="350" text-anchor="middle" class="kf4-caption">
+            Predicted estimate 
+          </text>
+        </g>
+
+        <!-- process noise annotation -->
+        <g class="fragment" data-fragment-index="2">
+          <text x="428" y="122" text-anchor="middle" class="kf4-q-label">
+		  
+            Increase in Uncertainty
+          </text>
+		<polygon points="408,165 401,153 415,153" class="kf4-q-arrow-head"/>
+          <line x1="408" y1="130" x2="408" y2="150" class="kf4-q-line"/>
+        </g>
+
+      </svg>
+
+      <div class="kf4-visual-note fragment" data-fragment-index="2">
+        The ellipse is a conceptual picture of the covariance:
+        after prediction, uncertainty typically grows because the process model
+        is not perfect.
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="kf4-bottom-note fragment" data-fragment-index="2">
+    After prediction, we have a <strong>best forecast</strong> of the state and its uncertainty.
+    Next, we will use a measurement to correct this prediction.
+  </div>
+
+  <div class="kf4-citation">
+    Reference: Crassidis &amp; Junkins, <em>Optimal Estimation of Dynamic Systems</em>.
+  </div>
+
+</section>
+
+
+<!-- SLIDE 5: KALMAN FILTER CORRECTION -->
+<section class="kf5-slide">
+
+  <h2 class="kf5-title">
+    Kalman Filter: Correction Step
+  </h2>
+
+  <p class="kf5-intro">
+    We now use the GPS measurement and its uncertainty
+    to correct the predicted aircraft state.
+  </p>
+
+  <div class="kf5-grid">
+
+    <!-- LEFT COLUMN: EQUATIONS -->
+    <div class="kf5-left">
+
+      <!-- 1. INNOVATION -->
+      <div class="kf5-card kf5-innovation fragment"
+           data-fragment-index="0">
+
+        <h3>1. Measurement Innovation</h3>
+
+        <div class="kf5-equation">
+          \[
+          \mathbf{r}_k =
+          \mathbf{z}_k-H\hat{\mathbf{x}}_k^-
+          \]
+        </div>
+
+        <p>
+          The innovation measures the difference between
+          the GPS observation and the predicted measurement.
+        </p>
+
+      </div>
+
+      <!-- 2. KALMAN GAIN -->
+      
+<!-- 2. KALMAN GAIN: MINIMUM VARIANCE -->
+<div class="kf5-card kf5-gain fragment"
+     data-fragment-index="1">
+
+  <h3>2. Kalman Gain: Minimum-Variance Estimation</h3>
+
+  <p class="kf5-gain-intuition">
+    The Kalman gain is chosen to
+    <strong>minimize the estimation-error variance</strong>
+    after measurement correction.
+  </p>
+
+  <!-- Scalar case 
+  <div class="kf5-scalar-gain">
+
+    \[
+    P_{p,k}^{+}(K_p)
+    =(1-K_p)^2P_{pp,k}^{-}+K_p^2R
+    \]
+
+    \[
+    \frac{dP_{p,k}^{+}}{dK_p}=0
+    \quad\Longrightarrow\quad
+    \boxed{K_p=\frac{P_{pp,k}^{-}}{P_{pp,k}^{-}+R}}
+    \]
+
+  </div>
+
+  <p class="kf5-gain-subheading">
+    General state-space expression:
+  </p>-->
+
+  <div class="kf5-equation kf5-matrix-gain">
+    \[
+    \boxed{
+    K_k=P_k^-H^T(HP_k^-H^T+R)^{-1}
+    }
+    \]
+  </div>
+
+  <p class="kf5-gain-summary">
+    The relative uncertainties determine how much
+    the GPS measurement influences the prediction.
+  </p>
+
+</div>
+
+
+      <!-- 3. STATE UPDATE -->
+      <div class="kf5-card kf5-state-update fragment"
+           data-fragment-index="2">
+
+        <h3>3. Correct the State Estimate</h3>
+
+        <div class="kf5-equation">
+          \[
+          \hat{\mathbf{x}}_k^+
+          =\hat{\mathbf{x}}_k^-+K_k\mathbf{r}_k
+          \]
+        </div>
+
+        <p>
+          Update the estimated position and velocity
+          using the measurement innovation.
+        </p>
+
+      </div>
+
+      <!-- 4. COVARIANCE UPDATE -->
+      <div class="kf5-card kf5-cov-update fragment"
+           data-fragment-index="3">
+
+        <h3>4. Correct the Covariance</h3>
+
+        <div class="kf5-equation">
+          \[
+          P_k^+=(I-K_kH)P_k^-
+          \]
+        </div>
+
+        <p>
+          Incorporating measurement information reduces
+          uncertainty in the relevant state directions.
+        </p>
+
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: VISUALIZATION -->
+    <div class="kf5-right">
+
+      <div class="kf5-visual-heading">
+        Combining Prediction and GPS Measurement
+      </div>
+
+      <svg viewBox="0 0 560 330" class="kf5-svg">
+
+        <!-- Axes -->
+        <line x1="65" y1="275" x2="525" y2="275"
+              class="kf5-axis"/>
+
+        <line x1="65" y1="275" x2="65" y2="40"
+              class="kf5-axis"/>
+
+        <text x="295" y="313" text-anchor="middle"
+              class="kf5-axis-label">
+          Position
+        </text>
+
+        <text x="22" y="160" text-anchor="middle"
+              transform="rotate(-90 22 160)"
+              class="kf5-axis-label">
+          Velocity
+        </text>
+
+        <!-- PREDICTED ELLIPSE: ALWAYS VISIBLE -->
+        <ellipse cx="205" cy="183"
+                 rx="106" ry="48"
+                 transform="rotate(-22 205 183)"
+                 class="kf5-prior-ellipse"/>
+
+        <circle cx="205" cy="183" r="6"
+                class="kf5-prior-center"/>
+
+        <text x="158" y="90"
+              text-anchor="middle"
+              class="kf5-prior-label">
+          Prediction
+        </text>
+
+        <!-- GPS MEASUREMENT: FRAGMENT 0 -->
+        <g class="fragment" data-fragment-index="0">
+
+          <!-- uncertainty band: GPS observes position -->
+          <rect x="345" y="78"
+                width="92" height="192"
+                class="kf5-gps-band"/>
+
+          <line x1="391" y1="78"
+                x2="391" y2="270"
+                class="kf5-gps-line"/>
+
+          <text x="391" y="61"
+                text-anchor="middle"
+                class="kf5-gps-label">
+            GPS measurement
+          </text>
+
+          <!-- innovation arrow -->
+          <line x1="209" y1="113"
+                x2="381" y2="113"
+                class="kf5-innovation-arrow"/>
+
+          <polygon points="389,113 377,107 377,119"
+                   class="kf5-innovation-head"/>
+
+          <text x="292" y="104"
+                text-anchor="middle"
+                class="kf5-innovation-label">
+            Innovation
+          </text>
+
+        </g>
+
+        <!-- UPDATED STATE: FRAGMENT 2 -->
+        <g class="fragment" data-fragment-index="2">
+
+          <line x1="211" y1="182"
+                x2="315" y2="164"
+                class="kf5-update-arrow"/>
+
+          <polygon points="323,163 308,159 312,171"
+                   class="kf5-update-head"/>
+
+          <circle cx="323" cy="163" r="7"
+                  class="kf5-posterior-center"/>
+
+          <text x="350" y="221"
+                text-anchor="middle"
+                class="kf5-posterior-label">
+            Updated state
+          </text>
+
+        </g>
+
+        <!-- UPDATED COVARIANCE: FRAGMENT 3 -->
+        <g class="fragment" data-fragment-index="3">
+
+          <ellipse cx="323" cy="163"
+                   rx="66" ry="37"
+                   transform="rotate(-22 323 163)"
+                   class="kf5-posterior-ellipse"/>
+
+          <circle cx="323" cy="163" r="6"
+                  class="kf5-posterior-center"/>
+
+        </g>
+
+      </svg>
+
+      <!-- LEGEND -->
+      <div class="kf5-legend">
+        <span>
+          <i class="kf5-legend-prior"></i>
+          Predicted covariance
+        </span>
+        <span>
+          <i class="kf5-legend-gps"></i>
+          GPS uncertainty
+        </span>
+        <span>
+          <i class="kf5-legend-posterior"></i>
+          Updated covariance
+        </span>
+      </div>
+
+      <!-- NUMERICAL EXAMPLE -->
+      <div class="kf5-example fragment"
+           data-fragment-index="1">
+
+        <h3>Example: Position Correction</h3>
+
+        <p>
+          Model prediction = 120 m;
+          GPS measurement = 126 m
+        </p>
+
+        <div class="kf5-example-equation">
+          \[
+          K_p=\frac{16}{16+9}=0.64
+          \]
+        </div>
+
+      </div>
+
+      <!-- RESULT -->
+      <div class="kf5-result fragment"
+           data-fragment-index="2">
+
+        \[
+        \hat p_k^+
+        =120+0.64(126-120)
+        =123.84\ \mathrm{m}
+        \]
+
+      </div>
+
+      <p class="kf5-visual-note fragment"
+         data-fragment-index="3">
+        Measurement correction produces a refined estimate
+        and a smaller uncertainty region.
+        Ellipses are schematic, not to scale.
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM TAKEAWAY -->
+  <div class="kf5-bottom fragment"
+       data-fragment-index="3">
+
+    Prediction gives us a forecast.
+    Measurement correction improves that forecast
+    based on the relative uncertainties.
+
+  </div>
+
+  <div class="kf5-citation">
+    Reference: Crassidis &amp; Junkins,
+    <em>Optimal Estimation of Dynamic Systems</em>.
+  </div>
+
+</section>
+
+
+<!-- SLIDE 6: KEY TAKEAWAYS -->
+<section class="kf6-slide">
+
+  <h2 class="kf6-title">
+    Key Takeaways: Kalman Filtering
+  </h2>
+
+  <p class="kf6-intro">
+    What have we learned about estimating the state
+    of a dynamic system?
+  </p>
+
+  <div class="kf6-grid">
+
+    <!-- TAKEAWAY 1 -->
+    <div class="kf6-card fragment"
+         data-fragment-index="0">
+
+      <h3>1. Dynamic Models Predict Motion</h3>
+
+      <p>
+        A mathematical model predicts how the system
+        state evolves, but model imperfections
+        introduce uncertainty.
+      </p>
+
+      <div class="kf6-keyword">
+        State prediction + covariance propagation
+      </div>
+
+    </div>
+
+    <!-- TAKEAWAY 2 -->
+    <div class="kf6-card fragment"
+         data-fragment-index="1">
+
+      <h3>2. Measurements Provide Information</h3>
+
+      <p>
+        Sensors such as GPS provide observations
+        of the system, but measurements are
+        affected by noise.
+      </p>
+
+      <div class="kf6-keyword">
+        Measurement model + measurement uncertainty
+      </div>
+
+    </div>
+
+    <!-- TAKEAWAY 3 -->
+    <div class="kf6-card fragment"
+         data-fragment-index="2">
+
+      <h3>3. The Kalman Gain Balances Both</h3>
+
+      <p>
+        The Kalman gain determines how strongly
+        measurements correct the prediction,
+        based on their relative uncertainties.
+      </p>
+
+      <div class="kf6-keyword">
+        Minimum-variance estimation
+      </div>
+
+    </div>
+
+    <!-- TAKEAWAY 4 -->
+    <div class="kf6-card fragment"
+         data-fragment-index="3">
+
+      <h3>4. Estimation Is a Repeated Process</h3>
+
+      <p>
+        Prediction and correction are performed
+        sequentially to continuously refine the
+        state estimate and its uncertainty.
+      </p>
+
+      <div class="kf6-keyword">
+        Predict → Correct → Repeat
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- FINAL REVEAL: FILTER CYCLE -->
+  <div class="kf6-cycle fragment"
+       data-fragment-index="4">
+
+    <svg viewBox="0 0 820 105" class="kf6-cycle-svg">
+
+      <!-- Prediction -->
+      <rect x="25" y="20" width="220" height="60"
+            rx="9" class="kf6-predict-box"/>
+
+      <text x="135" y="46" text-anchor="middle"
+            class="kf6-cycle-title" fill="#245f9e">
+        PREDICT
+      </text>
+
+      <text x="135" y="65" text-anchor="middle"
+            class="kf6-cycle-subtitle">
+        Motion model + Q
+      </text>
+
+      <!-- Forward arrow -->
+      <line x1="255" y1="50" x2="325" y2="50"
+            class="kf6-cycle-arrow"/>
+
+      <polygon points="335,50 323,43 323,57"
+               class="kf6-cycle-arrowhead"/>
+
+      <!-- Correction -->
+      <rect x="345" y="20" width="220" height="60"
+            rx="9" class="kf6-correct-box"/>
+
+      <text x="455" y="46" text-anchor="middle"
+            class="kf6-cycle-title" fill="#3f7d44">
+        CORRECT
+      </text>
+
+      <text x="455" y="65" text-anchor="middle"
+            class="kf6-cycle-subtitle">
+        Sensor measurement + R
+      </text>
+
+      <!-- Output -->
+      <line x1="575" y1="50" x2="640" y2="50"
+            class="kf6-cycle-arrow"/>
+
+      <polygon points="650,50 638,43 638,57"
+               class="kf6-cycle-arrowhead"/>
+
+      <text x="733" y="45" text-anchor="middle"
+            class="kf6-output-title">
+        Updated State
+      </text>
+
+      <text x="733" y="65" text-anchor="middle"
+            class="kf6-cycle-subtitle">
+        and Covariance
+      </text>
+
+    </svg>
+
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="kf6-closing fragment"
+       data-fragment-index="4">
+
+    The Kalman filter combines dynamic models and noisy measurements
+    to obtain a more reliable estimate of the system state.
+
+  </div>
+
+  <div class="kf6-citation">
+    Reference: Crassidis &amp; Junkins,
+    <em>Optimal Estimation of Dynamic Systems</em>.
+  </div>
+
+</section>
+
+
+
+
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
