@@ -375,7 +375,7 @@
       <div class="kf3-noise-definition">
         <p>
           <strong>Q:</strong>
-          Covariance of process noise.
+          Covariance Matrix of process noise.
           Describes model-error uncertainty.
         </p>
 
@@ -385,11 +385,14 @@
           Describes GPS uncertainty.
         </p>
       </div>
-
-      <p class="kf3-stat-note">
-        Mean describes the center; variance measures spread;
+		<ul class="kf4-bullets">
+          <li><strong>Diagonal terms of a Covariance matrix:</strong> Variance of the state errors produced by the model</li>
+          <li><strong>Off-diagonal terms:</strong> Correlation between process noise errors</li>
+        </ul>
+      <!--<p class="kf3-stat-note">
+        Mean describes the average; variance mees spread;
         covariance describes how errors vary together.
-      </p>
+      </p>-->
 
     </div>
 
