@@ -304,18 +304,17 @@
     <div class="kf3-panel kf3-gps fragment"
          data-fragment-index="2">
 
-      <h3>3. GPS Measurement Model</h3>
+      <h3>3. Measurement Model</h3>
 
       <div class="kf3-equation">
         \[
-        z_k =
-        \begin{bmatrix}1 & 0\end{bmatrix}
+        z_k = H
         \mathbf{x}_k + \nu_k
         \]
       </div>
 
       <p>
-        GPS measures position, but the measurement
+        In our simplified GPS measurement model position, H = [1  0]. The measurement
         contains an error \(\nu_k\).
       </p>
 
@@ -329,31 +328,37 @@
     <div class="kf3-panel kf3-model fragment"
          data-fragment-index="1">
 
-      <h3>2. Constant-Velocity Process Model</h3>
+      <h3>2. Process Model</h3>
 
-      <div class="kf3-equation">
-        \[
-        \mathbf{x}_{k+1} =
-        \underbrace{
-        \begin{bmatrix}
-          1 & \Delta t\\
-          0 & 1
-        \end{bmatrix}}_{F}
-        \mathbf{x}_k
-        + \mathbf{w}_k
-        \]
-      </div>
+	  <div class="kf3-equation">
+	\[
+		\mathbf{x}_{k+1} =
+		\underbrace{
+		\begin{bmatrix}
+		1 & \Delta t\\
+		0 & 1
+		\end{bmatrix}}_{F}
+		\mathbf{x}_k
+		+ B\mathbf{u}_k
+		+ \mathbf{w}_k
+	\]
+</div>
 
-      <p>
-        The matrix \(F\) describes how the state evolves
-        from one time step to the next.
-      </p>
+	<p>
+  <strong>\(F\):</strong> State-transition matrix.
+  <strong>\(B\):</strong> Input matrix.
+  <strong>\(\mathbf{u}_k\):</strong> Known control input.
+	</p>
 
-      <p>
-        <strong>\(\mathbf{w}_k\):</strong>
-        Process noise, accounting for unmodeled acceleration,
-        disturbances, and other modeling errors.
-      </p>
+	<p>
+  <strong>\(\mathbf{w}_k\):</strong> Process noise,
+  representing unmodeled dynamics and disturbances.
+	</p>
+
+	<p class="kf3-input-note">
+	For our constant-velocity example:
+	\(\mathbf{u}_k=\mathbf{0}\).
+	</p>
 
     </div>
 
@@ -438,12 +443,14 @@
         <div class="kf4-equation">
           \[
           \hat{\mathbf{x}}_k^- = F\hat{\mathbf{x}}_{k-1}^+
+		  +B\mathbf{u}_{k-1}
           \]
         </div>
 
         <p>
-          The previous corrected estimate is propagated through
-          the motion model to predict the next state.
+		Propagate the previous corrected state estimate
+		using the dynamics and the known control input.
+		In our example, \(\mathbf{u}_{k-1}=\mathbf{0}\).
         </p>
       </div>
 	  
