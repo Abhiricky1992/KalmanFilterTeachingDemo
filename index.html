@@ -374,7 +374,7 @@
       <div class="kf3-noise-definition">
         <p>
           <strong>Q:</strong>
-          Covariance Matrix of process noise.
+          Covariance of process noise.
           Describes model-error uncertainty.
         </p>
 
@@ -385,8 +385,8 @@
         </p>
       </div>
 		<ul class="kf4-bullets">
-          <li><strong>Diagonal terms of a Covariance matrix:</strong> Variance of the state errors produced by the model</li>
-          <li><strong>Off-diagonal terms:</strong> Correlation between process noise errors</li>
+          <li><strong>Diagonal terms of Q:</strong> Variance of the state errors produced by the model</li>
+          <li><strong>Off-diagonal terms of Q:</strong> Correlation between process noise errors</li>
         </ul>
       <!--<p class="kf3-stat-note">
         Mean describes the average; variance mees spread;
@@ -446,27 +446,10 @@
           the motion model to predict the next state.
         </p>
       </div>
-
-      <!-- covariance propagation -->
-      <div class="kf4-card kf4-cov-card fragment" data-fragment-index="1">
-        <h3>2. Covariance Propagation</h3>
-
-        <div class="kf4-equation">
-          \[
-          P_k^- = FP_{k-1}^+F^T + Q
-          \]
-        </div>
-
-        <p>
-          The uncertainty in the state estimate is also propagated.
-          The process noise covariance \(Q\) adds uncertainty due to
-          model imperfections and disturbances.
-        </p>
-      </div>
-
-      <!-- meaning of P -->
-      <div class="kf4-card kf4-meaning-card fragment" data-fragment-index="2">
-        <h3>3. What Does \(P\) Mean?</h3>
+	  
+	        <!-- meaning of P -->
+      <div class="kf4-card kf4-meaning-card fragment" data-fragment-index="1">
+        <h3>2. Defining the Covariance Matrix \(P\)</h3>
 
         <div class="kf4-equation">
           \[
@@ -484,7 +467,26 @@
         </ul>
       </div>
 
-    </div>
+    
+
+      <!-- covariance propagation -->
+      <div class="kf4-card kf4-cov-card fragment" data-fragment-index="2">
+        <h3>3. Covariance Propagation</h3>
+ 
+        <div class="kf4-equation">
+          \[
+          P_k^- = FP_{k-1}^+F^T + Q
+          \]
+        </div>
+
+        <p>
+          The uncertainty in the state estimate is also propagated.
+          The process noise covariance \(Q\) adds uncertainty due to
+          model imperfections and disturbances.
+        </p>
+      </div>
+	</div>
+
 
     <!-- RIGHT COLUMN -->
     <div class="kf4-right">
@@ -537,7 +539,7 @@
         </g>
 
         <!-- predicted estimate -->
-        <g class="fragment" data-fragment-index="1">
+        <g class="fragment" data-fragment-index="2">
           <ellipse cx="408" cy="195" rx="56" ry="30"
                    transform="rotate(-25 408 195)"
                    class="kf4-ellipse-pred"/>
@@ -551,13 +553,13 @@
         </g>
 
         <!-- process noise annotation -->
-        <g class="fragment" data-fragment-index="2">
-          <text x="428" y="122" text-anchor="middle" class="kf4-q-label">
+        <g class="fragment" data-fragment-index="1">
+          <text x="178" y="130" text-anchor="middle" class="kf4-q-label">
 		  
-            Increase in Uncertainty
+            Depiction of Uncertainty
           </text>
-		<polygon points="408,165 401,153 415,153" class="kf4-q-arrow-head"/>
-          <line x1="408" y1="130" x2="408" y2="150" class="kf4-q-line"/>
+		<polygon points="158,193, 151,177 165,177" class="kf4-q-arrow-head"/>
+          <line x1="158" y1="138" x2="158" y2="190" class="kf4-q-line"/>
         </g>
 
       </svg>
