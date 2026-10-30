@@ -8,8 +8,33 @@ Reveal.initialize({
   backgroundTransition: "fade",
   width: 1280,
   height: 720,
-  margin: 0.04
+  margin: 0.04,
+
+  // Handwriting settings
+  chalkboard: {
+    theme: "whiteboard",
+    readOnly: false
+  },
+
+  // Add drawing buttons
+  customcontrols: {
+    controls: [
+      {
+        icon: '<i class="fa fa-pen"></i>',
+        title: 'Draw on slide (C)',
+        action: 'RevealChalkboard.toggleNotesCanvas();'
+      },
+      {
+        icon: '<i class="fa fa-chalkboard"></i>',
+        title: 'Open whiteboard (B)',
+        action: 'RevealChalkboard.toggleChalkboard();'
+      }
+    ]
+  },
+
+  plugins: [RevealChalkboard, RevealCustomControls]
 });
+
 
 
 /* =========================================
