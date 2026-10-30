@@ -340,17 +340,17 @@
 		\end{bmatrix}}_{F}
 		\mathbf{x}_k
 		+ B\mathbf{u}_k
-		+ \mathbf{w}_k
+		+ \Gamma\mathbf{w}_k
 	\]
 </div>
 
 	<p>
   <strong>\(F\):</strong> State-transition matrix.
   <strong>\(B\):</strong> Input matrix.
+  <strong>\(\Gamma\):</strong> Process-noise distribution matrix
+  </p>
+  <p>
   <strong>\(\mathbf{u}_k\):</strong> Known control input.
-	</p>
-
-	<p>
   <strong>\(\mathbf{w}_k\):</strong> Process noise,
   representing unmodeled dynamics and disturbances.
 	</p>
@@ -482,7 +482,8 @@
  
         <div class="kf4-equation">
           \[
-          P_k^- = FP_{k-1}^+F^T + Q
+          P_k^- = FP_{k-1}^+F^T + 
+		  \Gamma Q\Gamma^T
           \]
         </div>
 

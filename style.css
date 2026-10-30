@@ -352,6 +352,8 @@
 
 .kf3-model {
   border-left: 7px solid #3f7d44;
+  min-height: 330px;
+  overflow: visible;
 }
 
 .kf3-model h3 {
@@ -543,7 +545,7 @@
 }
 
 .kf4-bullets li {
-  font-size: 0.25em;
+  font-size: 0.35em;
   color: #444;
   line-height: 1.28;
   margin: 5px 0;
